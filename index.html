@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מדריך ומחולל פקודות לניהול חדרי ישיבות - Microsoft 365</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome (Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fbf8f3', // Warm neutral background
+                            100: '#f5efe6',
+                            200: '#eadbc8',
+                            300: '#dec2a2',
+                            400: '#d1a378',
+                            500: '#c58654', // Main accent (Warm Terracotta/Orange)
+                            600: '#b86b42',
+                            700: '#995638',
+                            800: '#7d4732',
+                            900: '#653a2b',
+                        },
+                        ui: {
+                            light: '#ffffff',
+                            dark: '#1c1917',
+                            gray: '#78716c'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Segoe UI', 'Tahoma', 'Geneva', 'Verdana', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5efe6; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1a378; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b86b42; 
+        }
+
+        /* Chart Container Styling per Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* max-w-2xl logic */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-brand-50 text-ui-dark min-h-screen flex flex-col font-sans">
+
+    <!-- Application Structure Plan:
+         The app is designed as an "Admin Dashboard" / "Wizard". 
+         Instead of a long linear document, it breaks the process into logical phases:
+         1. Dashboard/Overview: High-level requirements and visual timeline of propagation.
+         2. Setup Wizard: Interactive form to generate PowerShell commands for room creation/lists.
+         3. Troubleshooter: Dedicated section for the "Organizer Name" display bug, visually demonstrating the "Before/After".
+         
+         Key Interaction: "Global Context". The user enters their Room Email and List Name once, 
+         and ALL code snippets across the application dynamically update. This solves the user pain point of 
+         manually editing copied commands.
+    -->
+
+    <!-- Chosen Palette: Warm Neutrals (Stone/Sand) with Terracotta/Orange Accents for a calm, professional 'office' feel. -->
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-brand-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-500 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-door-open text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-brand-900 tracking-tight">ניהול חדרי ישיבות M365</h1>
+            </div>
+            <nav class="hidden md:flex space-x-reverse space-x-6 text-sm font-medium text-brand-800">
+                <button onclick="switchTab('dashboard')" class="nav-btn px-3 py-2 rounded-md hover:bg-brand-100 transition-colors" data-target="dashboard">לוח בקרה</button>
+                <button onclick="switchTab('setup')" class="nav-btn px-3 py-2 rounded-md hover:bg-brand-100 transition-colors" data-target="setup">אשף הקמה (PowerShell)</button>
+                <button onclick="switchTab('troubleshoot')" class="nav-btn px-3 py-2 rounded-md hover:bg-brand-100 transition-colors" data-target="troubleshoot">פתרון תקלות תצוגה</button>
+            </nav>
+            <!-- Mobile Menu Button (Icon only for simplicity in this demo) -->
+            <button class="md:hidden text-brand-800 p-2">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Global Input Context Bar -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-brand-200 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between animate-fade-in">
+            <div class="flex items-center gap-2 text-brand-700">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="font-semibold text-sm">מחולל פקודות אוטומטי:</span>
+                <span class="text-xs text-ui-gray hidden md:inline">הזן פרטים כדי לעדכן את כל הקוד במדריך</span>
+            </div>
+            <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                <div class="relative group">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-brand-400">
+                        <i class="fa-regular fa-envelope"></i>
+                    </div>
+                    <input type="text" id="globalRoomEmail" placeholder="כתובת מייל החדר (לדוג: room@domain.com)" 
+                           class="block w-full md:w-80 pr-10 pl-3 py-2 border border-brand-200 rounded-lg leading-5 bg-brand-50 placeholder-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-all"
+                           oninput="updateGlobalContext()">
+                </div>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-brand-400">
+                        <i class="fa-solid fa-list-ul"></i>
+                    </div>
+                    <input type="text" id="globalListName" placeholder="שם רשימת חדרים (לדוג: IL-Rooms)" 
+                           class="block w-full md:w-64 pr-10 pl-3 py-2 border border-brand-200 rounded-lg leading-5 bg-brand-50 placeholder-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm transition-all"
+                           oninput="updateGlobalContext()">
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: DASHBOARD -->
+        <div id="dashboard" class="view-section space-y-8 fade-in">
+            <!-- Intro Paragraph -->
+            <section class="prose max-w-none text-brand-900 mb-6">
+                <h2 class="text-2xl font-bold mb-2">סקירה כללית ודרישות קדם</h2>
+                <p class="text-ui-gray">
+                    ברוכים הבאים למערכת ניהול חדרי הישיבות. כלי זה מרכז את כל המידע הטכני, הפקודות והפתרונות להקמה ותחזוקה של חדרי ישיבות בארגון (Microsoft 365).
+                    המידע מבוסס על מודול <code>ExchangeOnlineManagement 3.9.2</code>. כאן תוכלו לראות את דרישות המערכת ולהבין את זמני ההפצה של השינויים.
+                </p>
+            </section>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-brand-100 hover:border-brand-300 transition-all">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <h3 class="font-bold text-lg">רישוי נדרש</h3>
+                    </div>
+                    <ul class="text-sm space-y-2 text-ui-gray">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-500 mt-1"></i> <span>רישיון <strong>SHARED</strong> למכשיר פיזי</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-500 mt-1"></i> <span>אין צורך ברישיון O365 לתיבת המייל</span></li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-brand-100 hover:border-brand-300 transition-all">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-purple-100 text-purple-600 p-3 rounded-full">
+                            <i class="fa-solid fa-terminal"></i>
+                        </div>
+                        <h3 class="font-bold text-lg">דרישות ניהול</h3>
+                    </div>
+                    <ul class="text-sm space-y-2 text-ui-gray">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-500 mt-1"></i> <span>PowerShell (Run as Admin)</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-500 mt-1"></i> <span>מודול Exchange Online V3</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-green-500 mt-1"></i> <span>גישת Global Admin</span></li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-brand-100 hover:border-brand-300 transition-all">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="bg-orange-100 text-orange-600 p-3 rounded-full">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h3 class="font-bold text-lg">נקודות קריטיות</h3>
+                    </div>
+                    <ul class="text-sm space-y-2 text-ui-gray">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-circle-exclamation text-orange-500 mt-1 text-xs"></i> <span>שם החדר הוא קבוע (Display Name)</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-circle-exclamation text-orange-500 mt-1 text-xs"></i> <span>Room Lists רק ב-PowerShell</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-circle-exclamation text-orange-500 mt-1 text-xs"></i> <span>הגדרות פרטיות מסתירות נושא</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Visualization: Propagation Times -->
+            <!-- Visualization & Content Choices:
+                 Goal: Manage expectations regarding how long changes take to apply.
+                 Viz: Bar chart showing "Wait Time".
+                 Interaction: None (informative).
+            -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-brand-100">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-brand-900">זמני הפצה וסנכרון (Propagation)</h3>
+                        <p class="text-sm text-ui-gray">הערכת זמן עד ששינויים משתקפים ב-Outlook ו-Teams</p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="propagationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: SETUP WIZARD -->
+        <div id="setup" class="view-section hidden space-y-8 fade-in">
+            <!-- Intro -->
+            <section class="prose max-w-none text-brand-900">
+                <h2 class="text-2xl font-bold">אשף הקמה והגדרות PowerShell</h2>
+                <p class="text-ui-gray">
+                    תהליך ההקמה משלב פעולות בממשק הניהול (GUI) ופעולות מתקדמות ב-PowerShell. השתמשו בלשוניות למטה כדי לעבור בין שלבי ההתקנה, יצירת הרשימות ושיוך החדרים.
+                    הקודים למטה מתעדכנים אוטומטית לפי הערכים שהזנתם בראש העמוד.
+                </p>
+            </section>
+
+            <!-- Steps Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-brand-200 overflow-hidden">
+                <div class="flex border-b border-brand-200 bg-brand-50 overflow-x-auto">
+                    <button class="step-tab px-6 py-3 text-sm font-medium text-brand-600 border-b-2 border-brand-500 bg-white" onclick="switchStep(1)">1. הכנת הסביבה</button>
+                    <button class="step-tab px-6 py-3 text-sm font-medium text-ui-gray hover:text-brand-600" onclick="switchStep(2)">2. הקמת החדר (GUI)</button>
+                    <button class="step-tab px-6 py-3 text-sm font-medium text-ui-gray hover:text-brand-600" onclick="switchStep(3)">3. רשימות חדרים (Room Lists)</button>
+                </div>
+
+                <div class="p-6">
+                    <!-- Step 1: Environment -->
+                    <div id="step-1" class="step-content">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-brands fa-windows text-blue-500"></i>
+                            התקנת המודול והתחברות
+                        </h3>
+                        <p class="mb-4 text-sm text-ui-gray">יש לבצע באופן חד פעמי על המחשב המנהל. פתחו PowerShell כ-Administrator.</p>
+                        
+                        <div class="space-y-4">
+                            <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                                <p class="text-xs text-slate-400 mb-2">// 1. הרשאת הרצת סקריפטים</p>
+                                <code class="code-block text-green-400 text-sm block">Set-ExecutionPolicy RemoteSigned -Scope CurrentUser</code>
+                                <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                            
+                            <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                                <p class="text-xs text-slate-400 mb-2">// 2. התקנת המודול (אשר NuGet במידת הצורך)</p>
+                                <code class="code-block text-green-400 text-sm block">Install-Module -Name ExchangeOnlineManagement</code>
+                                <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+
+                            <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                                <p class="text-xs text-slate-400 mb-2">// 3. טעינה והתחברות (ייפתח חלון הזדהות)</p>
+                                <code class="code-block text-green-400 text-sm block">
+Import-Module ExchangeOnlineManagement
+Connect-ExchangeOnline
+                                </code>
+                                <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: GUI Creation -->
+                    <div id="step-2" class="step-content hidden">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-globe text-blue-500"></i>
+                            יצירת החדר בפורטל הניהול
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4 text-sm text-ui-dark">
+                                <div class="flex gap-3">
+                                    <div class="bg-brand-100 w-8 h-8 rounded-full flex items-center justify-center font-bold text-brand-700 shrink-0">1</div>
+                                    <div>
+                                        <p class="font-bold">כניסה לפורטל</p>
+                                        <a href="https://admin.exchange.microsoft.com/#/resources" target="_blank" class="text-blue-600 hover:underline">Exchange Admin Center - Resources</a>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <div class="bg-brand-100 w-8 h-8 rounded-full flex items-center justify-center font-bold text-brand-700 shrink-0">2</div>
+                                    <div>
+                                        <p class="font-bold">הוספת משאב</p>
+                                        <p>לחץ על <strong>Add a resource</strong> ובחר ב-<strong>Room</strong>.</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <div class="bg-brand-100 w-8 h-8 rounded-full flex items-center justify-center font-bold text-brand-700 shrink-0">3</div>
+                                    <div>
+                                        <p class="font-bold">הגדרת שם (קריטי!)</p>
+                                        <p>דייק בשם החדר. זהו ה-Display Name שיוצג למשתמשים.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-brand-50 p-4 rounded-lg border border-brand-200">
+                                <h4 class="font-bold text-sm mb-2">ניהול משתמש ורישוי</h4>
+                                <p class="text-xs mb-2">לאחר יצירת החדר, יש לגשת לפורטל המשתמשים:</p>
+                                <a href="https://admin.cloud.microsoft/?#/users" target="_blank" class="text-blue-600 hover:underline text-sm block mb-3">Microsoft 365 Admin Center - Users</a>
+                                <ul class="text-xs space-y-1 text-ui-gray list-disc list-inside">
+                                    <li>מצא את המשתמש שנוצר עבור החדר.</li>
+                                    <li>אפס סיסמה (Set Password).</li>
+                                    <li>שייך רישיון <strong>Teams Shared Devices</strong>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Room Lists -->
+                    <div id="step-3" class="step-content hidden">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-blue-500"></i>
+                            ניהול רשימות חדרים (Room Lists)
+                        </h3>
+                        <p class="mb-4 text-sm text-ui-gray">
+                            חדר לא יופיע בחיפוש "Browse all rooms" אם הוא לא חלק מ-Room List. פעולה זו מתבצעת ב-PowerShell בלבד.
+                        </p>
+
+                        <div class="grid gap-6">
+                            <!-- Create List -->
+                            <div class="border-l-4 border-blue-400 pl-4 bg-slate-50 p-4 rounded-r-lg">
+                                <h4 class="font-bold text-sm text-slate-800">א. יצירת רשימה חדשה</h4>
+                                <p class="text-xs text-slate-500 mb-2">צור רשימה רק אם היא לא קיימת (למשל עבור בניין או קומה).</p>
+                                <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                                    <code class="code-block text-yellow-300 text-sm block">
+New-DistributionGroup -Name "<span class="dynamic-list">IL-Rooms</span>" -RoomList
+                                    </code>
+                                    <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Add Member -->
+                            <div class="border-l-4 border-green-400 pl-4 bg-slate-50 p-4 rounded-r-lg">
+                                <h4 class="font-bold text-sm text-slate-800">ב. הוספת חדר לרשימה</h4>
+                                <p class="text-xs text-slate-500 mb-2">שיוך החדר לרשימה הקיימת.</p>
+                                <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                                    <code class="code-block text-green-400 text-sm block">
+Add-DistributionGroupMember -Identity "<span class="dynamic-list">IL-Rooms</span>" -Member "<span class="dynamic-email">room@domain.com</span>"
+                                    </code>
+                                    <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Verification -->
+                            <div class="bg-brand-50 p-4 rounded-lg">
+                                <h4 class="font-bold text-sm mb-2">פקודות בדיקה (Verify)</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center bg-white p-2 rounded border border-brand-200">
+                                        <span class="text-xs font-mono dir-ltr text-left flex-1">Get-DistributionGroup | where {$_.RecipientTypeDetails -eq "RoomList"}</span>
+                                        <span class="text-xs text-ui-gray mx-2">הצג רשימות</span>
+                                        <button class="text-brand-500 hover:text-brand-700" onclick="copyText(this.previousElementSibling.previousElementSibling.innerText)"><i class="fa-regular fa-copy"></i></button>
+                                    </div>
+                                    <div class="flex justify-between items-center bg-white p-2 rounded border border-brand-200">
+                                        <span class="text-xs font-mono dir-ltr text-left flex-1">Get-DistributionGroupMember -Identity "<span class="dynamic-list">IL-Rooms</span>"</span>
+                                        <span class="text-xs text-ui-gray mx-2">הצג חברים ברשימה</span>
+                                        <button class="text-brand-500 hover:text-brand-700" onclick="copyText(this.previousElementSibling.previousElementSibling.innerText)"><i class="fa-regular fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: TROUBLESHOOTING -->
+        <div id="troubleshoot" class="view-section hidden space-y-8 fade-in">
+            <!-- Intro with Visual Problem Statement -->
+            <section class="prose max-w-none text-brand-900 mb-6">
+                <h2 class="text-2xl font-bold">תיקון תצוגת "שם המארגן" במקום "נושא הפגישה"</h2>
+                <p class="text-ui-gray">
+                    כאשר הפאנל בחדר מציג את שם האדם שזימן את הפגישה במקום את נושא הפגישה עצמו, זהו מנגנון הגנה על פרטיות המופעל כברירת מחדל (DeleteSubject).
+                </p>
+            </section>
+
+            <!-- Interactive Visual: Before vs After -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Bad State -->
+                <div class="border-2 border-red-200 rounded-xl p-4 bg-red-50 flex flex-col items-center opacity-80 hover:opacity-100 transition-opacity">
+                    <h3 class="text-red-700 font-bold mb-3"><i class="fa-solid fa-xmark"></i> מצב מצוי (ברירת מחדל)</h3>
+                    <!-- Mockup Panel -->
+                    <div class="bg-gray-900 text-white w-full max-w-xs rounded-lg p-4 shadow-lg aspect-[4/3] flex flex-col justify-between relative overflow-hidden">
+                        <div class="text-xs text-gray-400">10:00 - 11:00</div>
+                        <div class="z-10">
+                            <div class="text-2xl font-bold mb-1">ישראל ישראלי</div> <!-- Organizer Name shown -->
+                            <div class="text-sm text-gray-400">Organizer</div>
+                        </div>
+                        <div class="absolute bottom-0 right-0 p-2 text-red-500 text-6xl opacity-20"><i class="fa-solid fa-user-lock"></i></div>
+                    </div>
+                    <ul class="mt-4 text-xs text-red-800 space-y-1">
+                        <li>DeleteSubject: True</li>
+                        <li>AddOrganizerToSubject: True</li>
+                    </ul>
+                </div>
+
+                <!-- Good State -->
+                <div class="border-2 border-green-200 rounded-xl p-4 bg-green-50 flex flex-col items-center">
+                    <h3 class="text-green-700 font-bold mb-3"><i class="fa-solid fa-check"></i> מצב רצוי (לאחר תיקון)</h3>
+                    <!-- Mockup Panel -->
+                    <div class="bg-gray-900 text-white w-full max-w-xs rounded-lg p-4 shadow-lg aspect-[4/3] flex flex-col justify-between relative overflow-hidden">
+                        <div class="text-xs text-gray-400">10:00 - 11:00</div>
+                        <div class="z-10">
+                            <div class="text-2xl font-bold mb-1 text-green-400">פגישת צוות שבועית</div> <!-- Subject Shown -->
+                            <div class="text-sm text-gray-400">ישראל ישראלי</div>
+                        </div>
+                        <div class="absolute bottom-0 right-0 p-2 text-green-500 text-6xl opacity-20"><i class="fa-solid fa-calendar-check"></i></div>
+                    </div>
+                    <ul class="mt-4 text-xs text-green-800 space-y-1">
+                        <li>DeleteSubject: False</li>
+                        <li>AddOrganizerToSubject: False</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Fix Actions -->
+            <div class="space-y-6">
+                <!-- Step 1: Check -->
+                <div class="bg-white rounded-xl shadow-sm border border-brand-200 p-6">
+                    <h4 class="font-bold text-lg mb-2 text-brand-800">1. בדיקת המצב הנוכחי</h4>
+                    <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group">
+                        <code class="code-block text-blue-300 text-sm block">
+Get-CalendarProcessing -Identity <span class="dynamic-email">room@domain.com</span> | fl DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty,OrganizerInfo,DeleteComments
+                        </code>
+                        <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <p class="text-xs text-ui-gray mt-2">אם הערכים חוזרים כ-True, יש להריץ את התיקון למטה.</p>
+                </div>
+
+                <!-- Step 2: Fix -->
+                <div class="bg-brand-600 rounded-xl shadow-lg border border-brand-700 p-6 text-white">
+                    <h4 class="font-bold text-lg mb-2 text-white flex items-center gap-2"><i class="fa-solid fa-wrench"></i> 2. פקודת התיקון המלאה</h4>
+                    <p class="text-sm text-brand-100 mb-4">פקודה זו מכבה את כל מנגנוני ההסתרה והפרטיות שמונעים את הצגת הנושא.</p>
+                    <div class="cmd-box bg-slate-900 rounded-lg p-4 relative group border border-brand-400">
+                        <code class="code-block text-green-400 text-sm block">
+Set-CalendarProcessing -Identity <span class="dynamic-email">room@domain.com</span> -DeleteSubject $False -AddOrganizerToSubject $False -RemovePrivateProperty $False -OrganizerInfo $False -DeleteComments $False
+                        </code>
+                        <button class="absolute top-2 left-2 text-slate-400 hover:text-white" onclick="copyCode(this)"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>
+                
+                <!-- Troubleshooting Checklist -->
+                 <div class="bg-orange-50 rounded-xl p-6 border border-orange-200">
+                    <h4 class="font-bold text-lg mb-4 text-orange-900">עדיין לא עובד? רשימת תקלות נפוצות</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-clock text-orange-500 mt-1"></i>
+                            <div>
+                                <p class="font-bold text-sm text-orange-900">פגישות ישנות</p>
+                                <p class="text-xs text-orange-800">התיקון חל רק על פגישות חדשות. פגישות שנוצרו לפני הרצת הפקודה לא יתעדכנו.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <i class="fa-solid fa-sync text-orange-500 mt-1"></i>
+                            <div>
+                                <p class="font-bold text-sm text-orange-900">בעיית Cache בפאנל</p>
+                                <p class="text-xs text-orange-800">יש לבצע Restart פיזי לפאנל (Yealink/Logitech) או להתנתק ולהתחבר מחדש.</p>
+                            </div>
+                        </div>
+                         <div class="flex gap-3">
+                            <i class="fa-solid fa-sliders text-orange-500 mt-1"></i>
+                            <div>
+                                <p class="font-bold text-sm text-orange-900">הגדרות Teams Admin</p>
+                                <p class="text-xs text-orange-800">בדוק ב-Teams Devices -> Panels -> Settings ש-<strong>Hide meeting titles</strong> כבוי.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-brand-200 mt-12 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-ui-gray text-sm">
+            <p>© 2026 מדריך ניהול חדרים. מבוסס על תיעוד רשמי.</p>
+            <p class="mt-2 text-xs">Microsoft 365, PowerShell ו-Exchange Online הם סימנים מסחריים של Microsoft.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // State Management
+        const state = {
+            currentTab: 'dashboard',
+            roomEmail: 'room@domain.com', // Default placeholder
+            listName: 'IL-Rooms' // Default placeholder
+        };
+
+        // DOM Elements
+        const inputs = {
+            email: document.getElementById('globalRoomEmail'),
+            list: document.getElementById('globalListName')
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            updateGlobalContext();
+        });
+
+        // --- Navigation Logic ---
+        function switchTab(tabId) {
+            // Hide all sections
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show target section
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Update Active State on Nav Buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === tabId) {
+                    btn.classList.add('bg-brand-100', 'text-brand-900');
+                } else {
+                    btn.classList.remove('bg-brand-100', 'text-brand-900');
+                }
+            });
+
+            state.currentTab = tabId;
+        }
+
+        function switchStep(stepNum) {
+            // Hide all step contents
+            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+            // Show target step
+            document.getElementById(`step-${stepNum}`).classList.remove('hidden');
+            
+            // Update Tabs Styling
+            const tabs = document.querySelectorAll('.step-tab');
+            tabs.forEach((tab, index) => {
+                if (index + 1 === stepNum) {
+                    tab.classList.add('border-b-2', 'border-brand-500', 'text-brand-600', 'bg-white');
+                    tab.classList.remove('text-ui-gray');
+                } else {
+                    tab.classList.remove('border-b-2', 'border-brand-500', 'text-brand-600', 'bg-white');
+                    tab.classList.add('text-ui-gray');
+                }
+            });
+        }
+
+        // --- Core Interaction: Dynamic Code Updates ---
+        function updateGlobalContext() {
+            // Update State
+            const emailInput = inputs.email.value.trim();
+            const listInput = inputs.list.value.trim();
+            
+            state.roomEmail = emailInput !== '' ? emailInput : 'room@domain.com';
+            state.listName = listInput !== '' ? listInput : 'IL-Rooms';
+
+            // Update DOM Elements
+            document.querySelectorAll('.dynamic-email').forEach(el => {
+                el.textContent = state.roomEmail;
+            });
+            
+            document.querySelectorAll('.dynamic-list').forEach(el => {
+                el.textContent = state.listName;
+            });
+        }
+
+        // --- Utilities ---
+        function copyCode(btnElement) {
+            const codeBlock = btnElement.parentElement.querySelector('code');
+            const text = codeBlock.innerText; // Preserves newlines
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Visual Feedback
+                const originalIcon = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
+                setTimeout(() => {
+                    btnElement.innerHTML = originalIcon;
+                }, 2000);
+            });
+        }
+
+        function copyText(text) {
+             navigator.clipboard.writeText(text);
+        }
+
+        // --- Chart.js Implementation ---
+        function initChart() {
+            const ctx = document.getElementById('propagationChart').getContext('2d');
+            
+            // Data derived from source text:
+            // Immediate: New meeting update (after fix)
+            // 10-30 mins: Room List creation, Member add, Outlook Indexing
+            // Never: Old meetings update
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['יצירת חדר (GUI)', 'עדכון שם פגישה (Fix)', 'שיוך לרשימה', 'הופעה בחיפוש (Teams)', 'עדכון פגישות ישנות'],
+                    datasets: [{
+                        label: 'זמן המתנה משוער (דקות)',
+                        data: [5, 10, 30, 30, 0], // 0 serves as a placeholder for "Never" logic handled in callbacks
+                        backgroundColor: [
+                            'rgba(197, 134, 84, 0.7)', // Brand 500
+                            'rgba(34, 197, 94, 0.7)',  // Green (Fix)
+                            'rgba(197, 134, 84, 0.7)',
+                            'rgba(197, 134, 84, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'   // Red (Never)
+                        ],
+                        borderColor: [
+                            'rgba(197, 134, 84, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(197, 134, 84, 1)',
+                            'rgba(197, 134, 84, 1)',
+                            'rgba(239, 68, 68, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'דקות'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.label === 'עדכון פגישות ישנות') {
+                                        return 'לא מתעדכן רטרואקטיבית';
+                                    }
+                                    if (context.label === 'יצירת חדר (GUI)') {
+                                        return 'מיידי (עדכון ב-AAD לוקח זמן)';
+                                    }
+                                    return `בערך ${context.raw} דקות`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+    
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. FontAwesome used via CDN for icons. -->
+</body>
+</html>
