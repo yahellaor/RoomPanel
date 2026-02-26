@@ -745,7 +745,11 @@ RemovePrivateProperty     : False</span></pre></div>
       <div class="qr-hdr">📋 סיכום פקודות PowerShell — Quick Reference</div>
       <div class="qr-body">
         <div class="code-wrap">
-          <div class="code-block"><div class="code-hdr"><span class="code-lang">PowerShell — כל הפקודות</span><button class="copy-btn" onclick="copyCode(this)">העתק הכל</button></div>
+          <div class="code-block">
+            <div class="code-hdr">
+              <span class="code-lang">PowerShell — כל הפקודות</span>
+              <button class="copy-btn" onclick="copyCode(this)">העתק הכל</button>
+            </div>
 <pre><span class="cm"># ══════════════════════════════════════
 # התחברות
 # ══════════════════════════════════════</span>
@@ -754,7 +758,6 @@ RemovePrivateProperty     : False</span></pre></div>
 <span class="cm"># ══════════════════════════════════════
 # ניהול Room Lists
 # ══════════════════════════════════════</span>
-<span class="fn">Connect-ExchangeOnline</span>
 
 <span class="cm"># יצירת Room List</span>
 <span class="fn">New-DistributionGroup</span> <span class="pm">-Name</span> <span class="str">"IL-Rooms"</span> <span class="pm">-RoomList</span>
@@ -771,23 +774,36 @@ RemovePrivateProperty     : False</span></pre></div>
 <span class="cm"># הסרת חדר מרשימה</span>
 <span class="fn">Remove-DistributionGroupMember</span> <span class="pm">-Identity</span> <span class="str">"IL-Rooms"</span> <span class="pm">-Member</span> <span class="str">"NewRoom@domain.com"</span>
 
-<span class="cm"># בדיקת Calendar Processing</span>
-<span class="fn">Get-CalendarProcessing</span> <span class="pm">-Identity</span> room@domain.com | fl DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty,OrganizerInfo,DeleteComments
-
-<span class="cm"># תיקון תצוגת שם פגישה</span>
-<span class="fn">Set-CalendarProcessing</span> <span class="pm">-Identity</span> room@domain.com <span class="pm">-DeleteSubject</span> $False <span class="pm">-AddOrganizerToSubject</span> $False <span class="pm">-RemovePrivateProperty</span> $False <span class="pm">-OrganizerInfo</span> $False <span class="pm">-DeleteComments</span> $False
-
 <span class="cm"># ══════════════════════════════════════
 # Calendar Processing — בדיקה ותיקון
 # ══════════════════════════════════════</span>
-<span class="fn">Get-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">NewRoom@domain.com</span> | <span class="fn">fl</span> <span class="pm">DeleteSubject</span>,<span class="pm">AddOrganizerToSubject</span>,<span class="pm">RemovePrivateProperty</span>,<span class="pm">OrganizerInfo</span>,<span class="pm">DeleteComments</span>
 
-<span class="fn">Set-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">NewRoom@domain.com</span> <span class="pm">-DeleteSubject</span> <span class="bl">$False</span> <span class="pm">-AddOrganizerToSubject</span> <span class="bl">$False</span> <span class="pm">-RemovePrivateProperty</span> <span class="bl">$False</span> <span class="pm">-OrganizerInfo</span> <span class="bl">$False</span> <span class="pm">-DeleteComments</span> <span class="bl">$False</span></pre></div>
+<span class="cm"># בדיקת Calendar Processing</span>
+<span class="fn">Get-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">room@domain.com</span> | <span class="fn">fl</span> DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty,OrganizerInfo,DeleteComments
+
+<span class="cm"># תיקון תצוגת שם פגישה</span>
+<span class="fn">Set-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">room@domain.com</span> <span class="pm">-DeleteSubject</span> $False <span class="pm">-AddOrganizerToSubject</span> $False <span class="pm">-RemovePrivateProperty</span> $False <span class="pm">-OrganizerInfo</span> $False <span class="pm">-DeleteComments</span> $False
+</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+    
+<span class="cm"># ══════════════════════════════════════
+# Calendar Processing — בדיקה ותיקון
+# ══════════════════════════════════════</span>
+
+<span class="fn">Get-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">NewRoom@domain.com</span> | <span class="fn">fl</span> DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty,OrganizerInfo,DeleteComments
+
+<span class="fn">Set-CalendarProcessing</span> <span class="pm">-Identity</span> <span class="str">NewRoom@domain.com</span> <span class="pm">-DeleteSubject</span> <span class="bl">$False</span> <span class="pm">-AddOrganizerToSubject</span> <span class="bl">$False</span> <span class="pm">-RemovePrivateProperty</span> <span class="bl">$False</span> <span class="pm">-OrganizerInfo</span> <span class="bl">$False</span> <span class="pm">-DeleteComments</span> <span class="bl">$False</span>
+</pre>
+          </div>
           <div class="email-note">⚠️ <strong>שים לב:</strong> יש להחליף את <code>NewRoom@domain.com</code> בכתובת המייל של החדר שלך כפי שהוגדרה בפורטל הניהול.</div>
         </div>
       </div>
     </div>
-    <div class="callout info" style="margin-top:16px"><span class="ci">📝</span><div>
+  <div class="callout info" style="margin-top:16px"><span class="ci">📝</span><div>
       <strong>תזכורות זמנים:</strong><br>
       • שינוי Calendar Processing → המתן <strong>5–10 דקות</strong><br>
       • חדר חדש / הוספה לרשימה → המתן <strong>10–30 דקות</strong> להופעה ב-Outlook/Teams
