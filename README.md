@@ -192,6 +192,8 @@ Remove-DistributionGroupMember -Identity "IL-Rooms" -Member "RoomName@domain.com
 ```powershell
 Get-CalendarProcessing -Identity room@domain.com | fl DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty
 ```
+❗שים לב לשינוי לנתוניך האישיים
+
 
 **אם החדר מציג את שם המארגן — סביר שתראה:**
 ```
@@ -207,6 +209,7 @@ RemovePrivateProperty     : True
 ```powershell
 Set-CalendarProcessing -Identity room@domain.com -DeleteSubject $False -AddOrganizerToSubject $False -RemovePrivateProperty $False
 ```
+❗שים לב לשינוי לנתוניך האישיים
 
 > ⏱️ המתן **5–10 דקות** — ה-Room Panel יתעדכן אוטומטית.
 
@@ -242,8 +245,10 @@ AddOrganizerToSubject     : False
 הרץ שוב:
 
 ```powershell
-Get-CalendarProcessing -Identity ErgoPanel@Ergomeeting.onmicrosoft.com | fl DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty
+Get-CalendarProcessing -Identity NewRoom@domain.com | fl DeleteSubject,AddOrganizerToSubject,RemovePrivateProperty
 ```
+❗שים לב לשינוי לנתוניך האישיים
+
 
 **התוצאה חייבת להיות:**
 ```
@@ -266,8 +271,9 @@ RemovePrivateProperty     : False
 **בדוק גם אותן:**
 
 ```powershell
-Get-CalendarProcessing -Identity ErgoPanel@Ergomeeting.onmicrosoft.com | fl OrganizerInfo,DeleteComments
+Get-CalendarProcessing -Identity NewRoom@domain.com | fl OrganizerInfo,DeleteComments
 ```
+❗שים לב לשינוי לנתוניך האישיים
 
 | הגדרה | אם `True` — ההשפעה |
 |---|---|
@@ -277,8 +283,9 @@ Get-CalendarProcessing -Identity ErgoPanel@Ergomeeting.onmicrosoft.com | fl Orga
 **כדי לכבות:**
 
 ```powershell
-Set-CalendarProcessing -Identity ErgoPanel@Ergomeeting.onmicrosoft.com -OrganizerInfo $False -DeleteComments $False
+Set-CalendarProcessing -Identity NewRoom@domain.com -OrganizerInfo $False -DeleteComments $False
 ```
+❗שים לב לשינוי לנתוניך האישיים
 
 ---
 
